@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sequence Data Processor</title>
+</head>
+<body>
+
+    <label for="sequenceSelect">Choose a sequence:</label>
+    <select id="sequenceSelect">
+        <option value="NRT_49">NRT_49</option>
+        <option value="NRT_83">NRT_83</option>
+    </select>
+
+    <br><br>
+
+    <label for="fastaFile">Upload a FASTA file:</label>
+    <input type="file" id="fastaFile" accept=".fasta, .fa">
+
+    <br><br>
+
+    <button onclick="processData()">Process Data</button>
+
+    <a id="downloadLink" style="display: none;">Download Processed FASTA</a>
+
+  <script>
+    let sequences = {
+        "NRT_49": ["cgccagcagtggcaatagcgtttccggccttttgtgccgggagggtcggcgagtcgccgacttaacgccagt", "atggtttgatggtattgccgctgttggcg"],
+        "NRT_83": ["cgggagaggccagggctcgcagatgagccatgagtaccgcggtgcttcgccgcgggggtgttctgtccccttctcttcgccagggtccc", "ggagccccgggtccaacgcctcgcaggtcgtcccctggcctctcccg"]
+    };
+
+    function processData() {
+        let selectedSequence = document.getElementById('sequenceSelect').value;
+        let fileInput = document.getElementById('fastaFile');
+
+        if (fileInput.files.length > 0) {
+            let file = fileInput.files[0];
+            let reader = new FileReader();
+
+            reader.onload = function(e) {
+                let fastaContent = e.target.result;
+                let processedData = processFasta(fastaContent, sequences[selectedSequence]);
+                createDownloadLink(processedData);
+            };
+
+            reader.readAsText(file);
+        } else {
+            alert("Please upload a FASTA file.");
+        }
+    }
+
+    function processFasta(fastaContent, selectedSequences) {
+        let lines = fastaContent.split(/\r?\n/);
+        let processedSequences = "";
+        let currentSequence = "";
+
+        lines.forEach(line => {
+            if (line.startsWith(">")) {
+                if (currentSequence.length > 0) {
+                    processedSequences += processSequence(currentSequence, selectedSequences) + "\n";
+                    currentSequence = "";
+                }
+                processedSequences += line + "\n";
+            } else {
+                currentSequence += line;
+            }
+        });
+
+        if (currentSequence.length > 0) {
+            processedSequences += processSequence(currentSequence, selectedSequences) + "\n";
+        }
+
+        return processedSequences;
+    }
+
+    function processSequence(sequence, selectedSequences) {
+        return selectedSequences[0] + sequence + selectedSequences[1];
+    }
+
+    function createDownloadLink(data) {
+        let downloadLink = document.getElementById('downloadLink');
+        let blob = new Blob([data], { type: 'text/plain' });
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = "processed_sequences.fasta";
+        downloadLink.style.display = 'block';
+        downloadLink.textContent = 'Download Processed FASTA';
+    }
+	</script>
+
+</body>
+</html>
